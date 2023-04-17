@@ -37,6 +37,12 @@ class MyTodoList extends ValueNotifier<List<Todo>> {
     value = await _todoService.getAllTodo();
     notifyListeners();
   }
+
+  List<Todo> getFilteredTodo(int isCompleted) {
+    return value
+        .where((element) => element.isCompleted == isCompleted)
+        .toList();
+  }
 }
 
 class _HomeScreenState extends State<HomeScreen>
@@ -65,26 +71,29 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           children: [
             ValueListenableBuilder(
-                valueListenable: myTodoList,
-                builder: (context, todoList, builder) {
-                  return Container(
-                    margin: const EdgeInsets.symmetric(
-                        vertical: 5.0, horizontal: 8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'You have ${todoList.where((element) => element.isCompleted == 0).length} incomplete tasks',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18.0,
-                          ),
+              valueListenable: myTodoList,
+              builder: (context, todoList, builder) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 12.0,
+                    horizontal: 8.0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'You have ${todoList.where((element) => element.isCompleted == 0).length} outstanding tasks',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20.0,
                         ),
-                        const Icon(Icons.sunny),
-                      ],
-                    ),
-                  );
-                }),
+                      ),
+                      const Icon(Icons.sunny),
+                    ],
+                  ),
+                );
+              },
+            ),
             ValueListenableBuilder(
                 valueListenable: myTodoList,
                 builder: (context, todoList, builder) {
@@ -93,13 +102,28 @@ class _HomeScreenState extends State<HomeScreen>
                     labelColor: Colors.deepPurple,
                     tabs: [
                       Tab(
-                          text:
-                              'Incomplete(${todoList.where((element) => element.isCompleted == 0).length})'),
+                          child: Text(
+                        'All (${myTodoList.value.length})',
+                        style: const TextStyle(fontSize: 12.0),
+                      )),
                       Tab(
-                        text:
-                            "Completed(${todoList.where((element) => element.isCompleted == 1).length})",
+                        child: Text(
+                          'In Progress(${todoList.where((element) => element.isCompleted == 0).length})',
+                          style: TextStyle(
+                            color: Colors.deepOrangeAccent.withOpacity(0.7),
+                            fontSize: 12.0,
+                          ),
+                        ),
                       ),
-                      Tab(text: 'All (${myTodoList.value.length})'),
+                      Tab(
+                        child: Text(
+                          "Completed(${todoList.where((element) => element.isCompleted == 1).length})",
+                          style: TextStyle(
+                            color: Colors.green.withOpacity(0.7),
+                            fontSize: 12.0,
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 }),
@@ -137,6 +161,9 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     );
                   } else {
+                    final filteredCompletedTodo = myTodoList.getFilteredTodo(1);
+                    final filteredUncompleteTodo =
+                        myTodoList.getFilteredTodo(0);
                     return TabBarView(
                       controller: _tabController,
                       children: [
@@ -148,48 +175,7 @@ class _HomeScreenState extends State<HomeScreen>
                           child: ListView.separated(
                             itemBuilder: (context, index) {
                               Todo todo = todoList[index];
-                              if (todo.isCompleted == 0) {
-                                return Dismissible(
-                                  onDismissed: (dismissed) {
-                                    myTodoList.removeTodo(todo.id);
-                                  },
-                                  key: ValueKey(todo.id),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.black38),
-                                      borderRadius: const BorderRadius.all(
-                                        Radius.circular(10.0),
-                                      ),
-                                    ),
-                                    child: ListTile(
-                                      leading: InkWell(
-                                        onTap: () {
-                                          // Invert isCompleted
-                                          int invertedTask =
-                                              (todo.isCompleted == 0 ? 1 : 0);
-                                          myTodoList.updateTodo(
-                                            Todo(
-                                                id: todo.id,
-                                                description: todo.description,
-                                                isCompleted: invertedTask),
-                                          );
-                                        },
-                                        child: Icon((todo.isCompleted == 1)
-                                            ? Icons.check_circle_outline
-                                            : Icons.circle_outlined),
-                                      ),
-                                      title: Text(
-                                        todo.description,
-                                        style: TextStyle(
-                                          decoration: (todo.isCompleted == 1)
-                                              ? TextDecoration.lineThrough
-                                              : TextDecoration.none,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
+                              return buildTodoItem(todo);
                             },
                             itemCount: todoList.length,
                             separatorBuilder:
@@ -205,45 +191,10 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           child: ListView.separated(
                             itemBuilder: (context, index) {
-                              Todo todo = todoList[index];
-                              if (todo.isCompleted == 1) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black38),
-                                    borderRadius: const BorderRadius.all(
-                                      Radius.circular(10.0),
-                                    ),
-                                  ),
-                                  child: ListTile(
-                                    leading: InkWell(
-                                      onTap: () {
-                                        // Invert isCompleted
-                                        int invertedTask =
-                                            (todo.isCompleted == 0 ? 1 : 0);
-                                        myTodoList.updateTodo(
-                                          Todo(
-                                              id: todo.id,
-                                              description: todo.description,
-                                              isCompleted: invertedTask),
-                                        );
-                                      },
-                                      child: Icon((todo.isCompleted == 1)
-                                          ? Icons.check_circle_outline
-                                          : Icons.circle_outlined),
-                                    ),
-                                    title: Text(
-                                      todo.description,
-                                      style: TextStyle(
-                                        decoration: (todo.isCompleted == 1)
-                                            ? TextDecoration.lineThrough
-                                            : TextDecoration.none,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
+                              Todo todo = filteredUncompleteTodo[index];
+                              return buildTodoItem(todo);
                             },
-                            itemCount: todoList.length,
+                            itemCount: filteredUncompleteTodo.length,
                             separatorBuilder:
                                 (BuildContext context, int index) {
                               return const SizedBox(height: 10.0);
@@ -257,43 +208,10 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           child: ListView.separated(
                             itemBuilder: (context, index) {
-                              Todo todo = todoList[index];
-                              return Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.black38),
-                                  borderRadius: const BorderRadius.all(
-                                    Radius.circular(10.0),
-                                  ),
-                                ),
-                                child: ListTile(
-                                  leading: InkWell(
-                                    onTap: () {
-                                      // Invert isCompleted
-                                      int invertedTask =
-                                          (todo.isCompleted == 0 ? 1 : 0);
-                                      myTodoList.updateTodo(
-                                        Todo(
-                                            id: todo.id,
-                                            description: todo.description,
-                                            isCompleted: invertedTask),
-                                      );
-                                    },
-                                    child: Icon((todo.isCompleted == 1)
-                                        ? Icons.check_circle_outline
-                                        : Icons.circle_outlined),
-                                  ),
-                                  title: Text(
-                                    todo.description,
-                                    style: TextStyle(
-                                      decoration: (todo.isCompleted == 1)
-                                          ? TextDecoration.lineThrough
-                                          : TextDecoration.none,
-                                    ),
-                                  ),
-                                ),
-                              );
+                              Todo todo = filteredCompletedTodo[index];
+                              return buildTodoItem(todo);
                             },
-                            itemCount: todoList.length,
+                            itemCount: filteredCompletedTodo.length,
                             separatorBuilder:
                                 (BuildContext context, int index) {
                               return const SizedBox(height: 10.0);
@@ -307,7 +225,10 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 12.0,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -320,13 +241,13 @@ class _HomeScreenState extends State<HomeScreen>
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                         filled: true,
+                        fillColor: Colors.white,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8.0),
                   Container(
-                    width: 50.0,
-                    height: 50.0,
+                    padding: const EdgeInsets.all(4.0),
                     decoration: BoxDecoration(
                       color: Colors.deepPurpleAccent,
                       borderRadius: BorderRadius.circular(10.0),
@@ -334,12 +255,13 @@ class _HomeScreenState extends State<HomeScreen>
                     child: IconButton(
                       icon: const Icon(Icons.add),
                       onPressed: () {
-                        myTodoList.addTodo(
-                          CreateTodo(
-                              description: _textEditingController.text,
-                              isCompleted: 0),
-                        );
-                        _textEditingController.clear();
+                        if (_textEditingController.text.isNotEmpty) {
+                          myTodoList.addTodo(CreateTodo(
+                            description: _textEditingController.text,
+                            isCompleted: 0,
+                          ));
+                          _textEditingController.clear();
+                        }
                       },
                       color: Colors.white,
                     ),
@@ -348,6 +270,56 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Dismissible buildTodoItem(Todo todo) {
+    return Dismissible(
+      onDismissed: (dismissed) {
+        myTodoList.removeTodo(todo.id);
+      },
+      key: ValueKey(todo.id),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black26),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(10.0),
+          ),
+        ),
+        child: ListTile(
+          tileColor: (todo.isCompleted == 1)
+              ? Colors.lightGreenAccent.shade400.withOpacity(0.1)
+              : Colors.orangeAccent.shade400.withOpacity(0.1),
+          leading: InkWell(
+            onTap: () {
+              // Invert isCompleted
+              int invertedTask = (todo.isCompleted == 0 ? 1 : 0);
+              myTodoList.updateTodo(
+                Todo(
+                  id: todo.id,
+                  description: todo.description,
+                  isCompleted: invertedTask,
+                ),
+              );
+            },
+            child: Icon(
+              (todo.isCompleted == 1)
+                  ? Icons.check_circle_outline
+                  : Icons.circle_outlined,
+              color:
+                  (todo.isCompleted == 1) ? Colors.green : Colors.orangeAccent,
+            ),
+          ),
+          title: Text(
+            todo.description,
+            style: TextStyle(
+              decoration: (todo.isCompleted == 1)
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
+            ),
+          ),
         ),
       ),
     );
